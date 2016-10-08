@@ -2,14 +2,21 @@ package com.example.chongshao_mikasa.airport2;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.opengl.Matrix;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Xml;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -51,6 +58,7 @@ import org.opencv.core.Core;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.calib3d.StereoBM;
 import org.opencv.calib3d.StereoSGBM;
+import org.xmlpull.v1.XmlSerializer;
 
 import com.estimote.sdk.BeaconManager;
 import com.estimote.sdk.Region;
@@ -60,7 +68,7 @@ import com.estimote.sdk.SystemRequirementsChecker;
 // TODO: saving the depth map
 
 //public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
  //   private Integer images[] = {R.drawable.pic1, R.drawable.pic2, R.drawable.pic3};
  //   private int currImage = 0;
@@ -114,7 +122,23 @@ public class MainActivity extends AppCompatActivity  {
     Mat rightImage = new Mat();
 
     // IMU related stuff
-    
+    private SensorManager mSensorManager;
+    private Sensor mRotationVectorSensor, mAccelerationSensor;
+
+    private final float[] mRotationMatrix = new float[16];
+    private volatile float[] mAccelerometerMatrix = new float[4];
+
+    private float rotationX = 0;
+    private float rotationY = 0;
+    private float rotationZ = 0;
+    private float accelX = 0;
+    private float accelY = 0;
+    private float accelZ = 0;
+
+    private TextView rotationMsg;
+
+    // text write related stuff
+    private Button writeButton;
 
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
@@ -153,9 +177,6 @@ public class MainActivity extends AppCompatActivity  {
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_1_0, this, mLoaderCallback);
         setContentView(R.layout.activity_main);
 
-      //  setInitialImage();
-     //   setImageRotateListener();
-
         Button buttonLoadImage = (Button)findViewById(R.id.buttonLoadPicture);
 
         buttonLoadImage.setOnClickListener(new View.OnClickListener() {
@@ -172,9 +193,9 @@ public class MainActivity extends AppCompatActivity  {
         buttonStereo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View arg0) {
-                try {
-                    Mat rectLeft = Utils.loadResource(MainActivity.this, R.drawable.im7, Imgcodecs.CV_LOAD_IMAGE_COLOR);
-                    Mat rectRight = Utils.loadResource(MainActivity.this, R.drawable.im8, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+//                try {
+            //        Mat rectLeft = Utils.loadResource(MainActivity.this, R.drawable.im7, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+            //        Mat rectRight = Utils.loadResource(MainActivity.this, R.drawable.im8, Imgcodecs.CV_LOAD_IMAGE_COLOR);
 
                   //  Mat disparity = createDisparityMap(rectLeft, rectRight);
                     Mat disparity = createDisparityMap(leftImage, rightImage);
@@ -197,10 +218,10 @@ public class MainActivity extends AppCompatActivity  {
                     Utils.matToBitmap(disparity2, dispBit, true);
                     Log.i(TAG, "all okay");
                     imageViewStereo.setImageBitmap(dispBit);
-                }
-                catch (IOException e) {
-                    Log.i(TAG, "problem!");
-                }
+//                }
+//                catch (IOException e) {
+//                    Log.i(TAG, "problem!");
+//                }
             }
         });
 
@@ -251,7 +272,7 @@ public class MainActivity extends AppCompatActivity  {
                 Bitmap saveBitMap = matToBitMap(leftImage, leftImage.width());
                 storeImage(saveBitMap);
                 MediaStore.Images.Media.insertImage(getContentResolver(),
-                        saveBitMap, "foo" , "bar"); //TODO: change this file name later
+                        saveBitMap, "foo" , "bar");
             }
         });
 
@@ -260,11 +281,10 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onClick(View v) {
                 debug.setText("right save button clicked!");
-            //    storeImage(((BitmapDrawable)rightImageView.getDrawable()).getBitmap());
                 Bitmap saveBitMap = matToBitMap(rightImage, rightImage.width());
                 storeImage(saveBitMap);
            //     MediaStore.Images.Media.insertImage(getContentResolver(),
-           //             ((BitmapDrawable)rightImageView.getDrawable()).getBitmap(), "foo2", "bar2"); //TODO: change this file name later
+           //             ((BitmapDrawable)rightImageView.getDrawable()).getBitmap(), "foo2", "bar2");
 
                 MediaStore.Images.Media.insertImage(getContentResolver(),
                             saveBitMap, "foo2", "bar2"); //TODO: change this file name later
@@ -273,6 +293,141 @@ public class MainActivity extends AppCompatActivity  {
 
         // debug related stuff
         debug = (TextView)this.findViewById(R.id.debugmsg);
+
+        // IMU related stuff
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mRotationVectorSensor = mSensorManager.getDefaultSensor(
+                Sensor.TYPE_ROTATION_VECTOR);
+        mAccelerationSensor = mSensorManager.getDefaultSensor(
+                Sensor.TYPE_ACCELEROMETER);
+
+        mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
+        mSensorManager.registerListener(this, mAccelerationSensor, 5000);
+        rotationMsg = (TextView)this.findViewById(R.id.rotationMsg);
+
+        // file write related stuff
+        writeButton = (Button)this.findViewById(R.id.writeButton);
+        writeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //   debug.setText("write button clicked!");
+
+                String filename = "mythirdfile";
+                debug.setText("hi3");
+
+                String outputString = "Hello world!";
+                File myDir = getFilesDir();
+                debug.setText("hi2");
+
+                try {
+                    File secondFile = new File(myDir + "/text/", filename);
+                    debug.setText(secondFile.toURI().toString());
+                        FileOutputStream fos = new FileOutputStream(secondFile);
+
+                        fos.write(outputString.getBytes());
+                        fos.flush();
+                        fos.close();
+
+                } catch (Exception e) {
+                    debug.setText(e.getMessage());
+                    e.printStackTrace();
+                }
+//                try {
+//
+//                    File outputFile = getFilesDir();
+//                    debug.setText(outputFile.toURI().toString());
+//                    FileOutputStream outputStream = new FileOutputStream(outputFile);
+//
+//                    outputStream.write(outputString.getBytes());
+//                    outputStream.close();
+//
+//                 //   outputStream.write(outputString.getBytes());
+//                //    outputStream.close();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//                String filename = "file.txt";
+//                FileOutputStream fos;
+//                try {
+//                    fos = openFileOutput(filename, Context.MODE_APPEND);
+//
+//                    XmlSerializer serializer = Xml.newSerializer();
+//                    serializer.setOutput(fos, "UTF-8");
+//                    serializer.startDocument(null, Boolean.valueOf(true));
+//                    serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
+//                    serializer.startTag(null, "root");
+//                    for (int j = 0; j < 3; j++) {
+//                        serializer.startTag(null, "record");
+//                        serializer.text("hi");
+//                        serializer.endTag(null, "record");
+//                    }
+//                    serializer.endDocument();
+//                    serializer.flush();
+//                    fos.close();
+//                } catch( Exception e) {
+//                e.printStackTrace();
+//                }
+            }
+        });
+    }
+
+    public void onSensorChanged(SensorEvent event) {
+        // we received a sensor event. it is a good practice to check
+        // that we received the proper event
+
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            mAccelerometerMatrix[0] = event.values[0];
+            mAccelerometerMatrix[1] = event.values[1];
+            mAccelerometerMatrix[2] = event.values[2];
+            mAccelerometerMatrix[3] = 0;
+
+            accelX = event.values[0];
+            accelY = event.values[1];
+            accelZ = event.values[2];
+        }
+
+        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            // convert the rotation-vector to a 4x4 matrix. the matrix
+            // is interpreted by Open GL as the inverse of the
+            // rotation-vector, which is what we want.
+
+            SensorManager.getRotationMatrixFromVector(
+                    mRotationMatrix, event.values);
+            rotationX = event.values[0];
+            rotationY = event.values[1];
+            rotationZ = event.values[2];
+
+            rotationMsg.setText("rotation x: " + String.valueOf(rotationX) + " y: " +
+                    String.valueOf(rotationY) + " z: " + String.valueOf(rotationZ));
+//            /**
+//             * START PRUEBA
+//             */
+//            float[] rotationMatrix = new float[16];
+//            float[] sensorMatrix = new float[4];
+//            float[] result = new float[16];
+//            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
+//
+//            Matrix.invertM(result, 0, rotationMatrix, 0);
+//
+//            sensorMatrix[0] = 0;
+//            sensorMatrix[1] = 0;
+//            sensorMatrix[2] = 0;
+//            sensorMatrix[3] = 0;
+//
+//            Matrix.multiplyMV(sensorMatrix,0,result,0,mAccelerometerMatrix,0);
+//
+//            Log.d("values[0]", Float.toString(event.values[0]));
+//            Log.d("values[1]", Float.toString(event.values[1]));
+//            Log.d("values[2]", Float.toString(event.values[2]));
+//
+//            Log.d("sensorMatrix[0]", Float.toString(sensorMatrix[0]));
+//            Log.d("sensorMatrix[1]", Float.toString(sensorMatrix[1]));
+//            Log.d("sensorMatrix[2]", Float.toString(sensorMatrix[2]));
+//            /*END PRUEBA*/
+        }
+    }
+
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
     // saving image related stuff
@@ -315,69 +470,57 @@ public class MainActivity extends AppCompatActivity  {
         return mediaFile;
     }
 
-    // stereo related stuff
- //   public void surfaceCreated(SurfaceHolder holder) {
-    //    camera = getS3DCamera();
-    //    if (is3Denabled) {
-    //        text.setText("S3D");
-    //    } else {
- //           camera = get2DCamera();
-  //          text.setText("2D");
-     //   }
- //       text.setVisibility(View.VISIBLE);
-  //  }
+//    public Camera get2DCamera() {
+//        Camera camera = null;
+//        try {
+//            camera = Camera.open();
+//            camera.setPreviewDisplay(holder);
+//        } catch (IOException ioe) {
+//            if (camera != null) {
+//                camera.release();
+//            }
+//            camera = null;
+//        } catch (RuntimeException rte) {
+//            if (camera != null) {
+//                camera.release();
+//            }
+//            camera = null;
+//        }
+//        return camera;
+//    }
 
-    public Camera get2DCamera() {
-        Camera camera = null;
-        try {
-            camera = Camera.open();
-            camera.setPreviewDisplay(holder);
-        } catch (IOException ioe) {
-            if (camera != null) {
-                camera.release();
-            }
-            camera = null;
-        } catch (RuntimeException rte) {
-            if (camera != null) {
-                camera.release();
-            }
-            camera = null;
-        }
-        return camera;
-    }
-
-    public Camera getS3DCamera() {
-        Camera camera = null;
-        int cameraID = Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH ?
-                CAMERA_STEREOSCOPIC : CAMERA_STEREOSCOPIC_ICS;
-        try {
-            camera = Camera.open(cameraID);
-            camera.setPreviewDisplay(holder);
-            is3Denabled = true;
-        } catch (IOException ioe) {
-            if (camera != null) {
-                camera.release();
-            }
-            camera = null;
-        } catch (NoSuchMethodError nsme) {
-            is3Denabled = false;
-            text.setVisibility(View.VISIBLE);
-            Log.w(TAG, Log.getStackTraceString(nsme));
-        } catch (UnsatisfiedLinkError usle) {
-            is3Denabled = false;
-            text.setVisibility(View.VISIBLE);
-            Log.w(TAG, Log.getStackTraceString(usle));
-        } catch (RuntimeException re) {
-            is3Denabled = false;
-            text.setVisibility(View.VISIBLE);
-            Log.w(TAG, Log.getStackTraceString(re));
-            if (camera != null) {
-                camera.release();
-            }
-            camera = null;
-        }
-        return camera;
-    }
+//    public Camera getS3DCamera() {
+//        Camera camera = null;
+//        int cameraID = Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH ?
+//                CAMERA_STEREOSCOPIC : CAMERA_STEREOSCOPIC_ICS;
+//        try {
+//            camera = Camera.open(cameraID);
+//            camera.setPreviewDisplay(holder);
+//            is3Denabled = true;
+//        } catch (IOException ioe) {
+//            if (camera != null) {
+//                camera.release();
+//            }
+//            camera = null;
+//        } catch (NoSuchMethodError nsme) {
+//            is3Denabled = false;
+//            text.setVisibility(View.VISIBLE);
+//            Log.w(TAG, Log.getStackTraceString(nsme));
+//        } catch (UnsatisfiedLinkError usle) {
+//            is3Denabled = false;
+//            text.setVisibility(View.VISIBLE);
+//            Log.w(TAG, Log.getStackTraceString(usle));
+//        } catch (RuntimeException re) {
+//            is3Denabled = false;
+//            text.setVisibility(View.VISIBLE);
+//            Log.w(TAG, Log.getStackTraceString(re));
+//            if (camera != null) {
+//                camera.release();
+//            }
+//            camera = null;
+//        }
+//        return camera;
+//    }
 
 //    public void surfaceDestroyed(SurfaceHolder surfaceholder) {
 //        stopPreview();
