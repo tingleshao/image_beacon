@@ -135,6 +135,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float accelY = 0;
     private float accelZ = 0;
 
+    private float leftRX = 0;
+    private float leftRY = 0;
+    private float leftRZ = 0;
+    private float leftAX = 0;
+    private float leftAY = 0;
+    private float leftAZ = 0;
+
+    private int rightIndex = 0;
+    private String currLeftName = "";
+
     private TextView rotationMsg;
 
     // text write related stuff
@@ -228,12 +238,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         beaconManager = new BeaconManager(this);
         region = new Region("ranged region",
                 UUID.fromString("B9407F30-F5F8-466E-AFF9-25556B57FE6D"), null, null);
-        // stereo related stuff
-    //    preview = (SurfaceView) findViewById(R.id.surface);
-    //    text = (TextView) findViewById(R.id.text);
-    //    holder = preview.getHolder();
-  //      holder.addCallback(this);
-   //     holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
         // camera related stuff
         this.leftImageView = (ImageView)this.findViewById(R.id.leftImageView);
@@ -269,6 +273,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onClick(View v) {
                 debug.setText("left save button clicked!");
+                saveLeftSensorData();
                 Bitmap saveBitMap = matToBitMap(leftImage, leftImage.width());
                 storeImage(saveBitMap);
                 MediaStore.Images.Media.insertImage(getContentResolver(),
@@ -281,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void onClick(View v) {
                 debug.setText("right save button clicked!");
+                saveRightSensorData();
                 Bitmap saveBitMap = matToBitMap(rightImage, rightImage.width());
                 storeImage(saveBitMap);
            //     MediaStore.Images.Media.insertImage(getContentResolver(),
@@ -369,6 +375,58 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 //                }
             }
         });
+    }
+
+    public void saveLeftSensorData() {
+        Long tsLong = System.currentTimeMillis()/1000;
+        String ts = tsLong.toString();
+        currLeftName = ts;
+        String filename = "sensorL"+ts+".txt";
+        String outputString = String.valueOf(rotationX) + "," + String.valueOf(rotationX) + "," +
+                String.valueOf(rotationY) + "," + String.valueOf(rotationZ) + "," +
+                String.valueOf(accelX) + "," + String.valueOf(accelY) + "," +
+                String.valueOf(accelZ) + "\n";
+        leftRX = rotationX;
+        leftRY = rotationY;
+        leftRZ = rotationZ;
+        leftAX = accelX;
+        leftAY = accelY;
+        leftAZ = accelZ;
+        rightIndex = 0;
+        File myDir = getFilesDir();
+
+        try {
+            File recordFile = new File(myDir + "/text/", filename);
+            debug.setText(recordFile.toURI().toString());
+            FileOutputStream fos = new FileOutputStream(recordFile);
+            fos.write(outputString.getBytes());
+            fos.flush();
+            fos.close();
+        } catch (Exception e) {
+            debug.setText(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void saveRightSensorData() {
+        String filename = "sensor"+currLeftName+"r"+String.valueOf(rightIndex)+".txt";
+        rightIndex = rightIndex+1;
+        String outputString = String.valueOf(rotationX-leftRX) + "," + String.valueOf(rotationY-leftRY) + "," +
+                String.valueOf(rotationZ-leftRZ) + "," + String.valueOf(accelX) + "," +
+                String.valueOf(accelY) + "," + String.valueOf(accelZ) + "\n";
+        File myDir = getFilesDir();
+
+        try {
+            File recordFile = new File(myDir + "/text/", filename);
+            debug.setText(recordFile.toURI().toString());
+            FileOutputStream fos = new FileOutputStream(recordFile);
+            fos.write(outputString.getBytes());
+            fos.flush();
+            fos.close();
+        } catch (Exception e) {
+            debug.setText(e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public void onSensorChanged(SensorEvent event) {
