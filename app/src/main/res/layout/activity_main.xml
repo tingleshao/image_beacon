@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="100" >
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.chongshao_mikasa.airport2.MainActivity">
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/imgView"
+        android:layout_marginLeft="110dp" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/imgViewStereo"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="220dp" />
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        app:srcCompat="@android:color/background_light"
+        android:layout_marginStart="0dp"
+        android:layout_marginBottom="0dp"
+        android:id="@+id/leftImageView"
+        android:layout_marginTop="150dp" />
+
+    <ImageView
+        android:layout_width="100dp"
+        app:srcCompat="@android:color/background_light"
+        android:id="@+id/rightImageView"
+        android:elevation="17dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="150dp"
+        android:layout_marginLeft="110dp" />
+
+    <Button
+        android:text="RTAKE"
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:id="@+id/rightImageButton"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="440dp" />
+
+    <TextView
+        android:text="TextView"
+        android:layout_height="wrap_content"
+        android:id="@+id/debugmsg"
+        android:layout_marginTop="120dp"
+        android:layout_width="220dp"
+        android:elevation="20dp" />
+
+    <Button
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:text="Load pic"
+        android:id="@+id/buttonLoadPicture"
+        android:layout_marginStart="200dp"
+        android:layout_marginTop="440dp"
+        android:layout_marginLeft="200dp" />
+
+    <Button
+        android:layout_width="80dp"
+        android:text="Stereo"
+        android:id="@+id/buttonStereo"
+        android:layout_height="40dp"
+        android:layout_marginTop="395dp"
+        android:layout_marginLeft="200dp" />
+
+    <Button
+        android:text="LSave"
+        android:layout_height="40dp"
+        android:id="@+id/leftSaveButton"
+        android:layout_marginTop="395dp"
+        android:layout_marginLeft="0dp"
+        android:layout_width="80dp" />
+
+    <Button
+        android:text="LTake"
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:id="@+id/leftImageButton"
+        android:layout_marginLeft="0dp"
+        android:layout_alignParentBottom="true" />
+
+    <Button
+        android:text="RSAVE"
+        android:id="@+id/rightSaveButton"
+        android:layout_marginLeft="100dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="395dp"
+        android:layout_width="80dp" />
+
+    <TextView
+        android:text="TextView"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="300dp"
+        android:id="@+id/rotationMsg" />
+
+    <Button
+        android:text="write"
+        android:layout_width="80dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="345dp"
+        android:id="@+id/writeButton"
+        android:layout_marginLeft="200dp" />
+
+</RelativeLayout>
+</LinearLayout>
