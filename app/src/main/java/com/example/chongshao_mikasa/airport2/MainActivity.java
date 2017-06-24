@@ -63,7 +63,6 @@ import com.estimote.sdk.BeaconManager;
 import com.estimote.sdk.Region;
 import com.estimote.sdk.SystemRequirementsChecker;
 
-// TODO: saving the camera iamge
 // TODO: saving the depth map
 
 //public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
